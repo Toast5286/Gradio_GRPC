@@ -41,13 +41,13 @@ To deploy this program it needes to compile the GRPC with the folowwing command:
 To create the Docker image with the program use:
 
 ```bash
-    docker build -t Gradio_GRPC  --build-arg SERVICE_NAME=generic_box -f docker/Dockerfile .
+    docker build -t gradio_grpc  --build-arg SERVICE_NAME=generic_box -f docker/Dockerfile .
 ```
 
 To run the container run the command:
 
 ```bash
-    docker run -p 8061:8061 -p 7860:7860 -it --rm Gradio_GRPC
+    docker run -p 8061:8061 -p 7860:7860 -it --rm gradio_grpc
 ```
 
 Where it maps the port 8061 to the GRPC and port 7860 to the Gradio server. In the command line will be a link to the Gradio WebUI. With the default settings it runs as localhost:7860.
