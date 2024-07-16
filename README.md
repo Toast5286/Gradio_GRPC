@@ -33,7 +33,7 @@ Used as a auxiliary function to make sure the files sent between the Gradio and 
 
 ## Deploy
 
-To deploy this program it needes to compile the GRPC with the folowwing command:
+To deploy this program it needes to compile the GRPC with the folowing command:
 
 ```bash
   python -m grpc_tools.protoc --proto_path=./protos --python_out=. --grpc_python_out=. generic_box.proto
