@@ -1,21 +1,23 @@
 import io
-from scipy.io import loadmat
+from scipy.io import loadmat,savemat
 import cv2
 import generic_box_pb2
 import time
 import os
 from pathlib import Path
+import io
 
 #TODO: Can change the Directories to save the data
 _SUBMIT_PATH = '/dev/shm/submit.mat'
-_DISPLAY_PATH = '/dev/shm/display.png'
+_DISPLAYIMG_PATH = '/dev/shm/display.png'
+_DISPLAYDATA_PATH = '/dev/shm/display.mat'
 
 
 def submit():
     #TODO:Here is where you can add your code to combine Gradio's inputs to send the GRPC message
     #Wait untill the _SUBMIT_PATH has a file to load
     while not FileIsReady(_SUBMIT_PATH):
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     with open(_SUBMIT_PATH, 'rb') as fp:
         image_bytes = fp.read()
@@ -23,12 +25,14 @@ def submit():
     return generic_box_pb2.Data(file=image_bytes)
 
 
-def display(datafile):
+def display(imgfile):
     #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
-    dados = loadmat(io.BytesIO(datafile)) 
-    img = dados['im']
+    dados = loadmat(io.BytesIO(imgfile)) 
 
-    cv2.imwrite(_DISPLAY_PATH, img)
+    img = dados['im0']
+
+    cv2.imwrite(_DISPLAYIMG_PATH, img) 
+
     return
 
 
@@ -37,10 +41,12 @@ def display(datafile):
 #Function to Clean up files
 def cleanup(DispOrSub,wait):
     #Check if cleanup if for the display directory or the submit directory
-    if DispOrSub == 'Disp':
-        dir = _DISPLAY_PATH
+    if DispOrSub == 'DispImg':
+        dir = _DISPLAYIMG_PATH
     elif DispOrSub == 'Sub':
         dir = _SUBMIT_PATH
+    elif DispOrSub == 'DispMat':
+        dir = _DISPLAYDATA_PATH
     else:
         return
     
