@@ -31,6 +31,9 @@ def display(imgfile):
 
     img = dados['im0']
 
+    disp_file = Path(_DISPLAYIMG_PATH)
+    while disp_file.is_file():
+        time.sleep(0.01)
     cv2.imwrite(_DISPLAYIMG_PATH, img) 
 
     return
