@@ -11,6 +11,9 @@ def gradio_function():
 
     #TODO: Here is where you can add your code to change the Gradio Interface
     with gr.Blocks() as demo:
+
+        streamFrame = gr.Number(value=0,visible=False,interactive=False)
+
         with gr.Row():
             with gr.Column():
                 input_type = gr.Dropdown(choices=["Image", "Stream", "Video"], label="Select Input Type")
@@ -19,37 +22,71 @@ def gradio_function():
                     img = gr.Image(sources="upload")
                 with gr.Column(visible=False) as Stream_input:
                     stream = gr.Image(sources="webcam",streaming=True)
+                    resetFrameCount = gr.Button(value='Reset frame Count')
                 with gr.Column(visible=False) as Video_input:
                     vid = gr.Video()
 
             
             with gr.Column():
                 display = gr.Image(label="YoloV8n Output")
+                fileOutput = gr.File(label='Output .mat file')
 
         input_type.change(update_visibility,inputs=input_type,outputs=[Image_input,Stream_input,Video_input])
         
         img.change(gradio_GRPC_submit,inputs=[img,input_type],outputs=[])     
-        stream.stream(gradio_GRPC_submit,inputs=[stream,input_type],outputs=[])
+        stream.stream(gradio_GRPC_Streamsubmit,inputs=[stream,input_type,streamFrame],outputs=[streamFrame])
         vid.change(gradio_GRPC_Vidsubmit,inputs=[vid,input_type],outputs=[])
 
-        demo.load(gradio_GRPC_display,inputs=[], outputs=[display])
+        resetFrameCount.click(ResetStreamFrameCount,inputs=[],outputs=[streamFrame])
+
+        demo.load(gradio_GRPC_display,inputs=[], outputs=[display,fileOutput],show_progress='hidden')
         
     demo.launch()
 
+
 def update_visibility(input_type):
     return gr.update(visible=input_type == "Image"), gr.update(visible=input_type == "Stream"), gr.update(visible=input_type == "Video")
-    
+
+#-----Image---------------------------------
+
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_submit(inputImg,input_type):
     #TODO: Here is where you can add your code to change how you process Gradios inputs and how to read GRPC's saved data
-    if (inputImg is None) or (input_type == "Video"):
+    if (inputImg is None) or (input_type != "Image"):
         return
     
+    sub_file = Path(_SUBMIT_PATH)
+    while sub_file.is_file():
+            time.sleep(0.01)
+
     #Save file in memory so GRPC can access it
     data_dict = {'im': inputImg,'frame': 0}
     savemat(_SUBMIT_PATH, data_dict)
 
     return
+
+#-----Stream---------------------------------
+
+#Function used to process the users data and outputs the desired data for the user
+def gradio_GRPC_Streamsubmit(inputImg,input_type,frame):
+    #TODO: Here is where you can add your code to change how you process Gradios inputs and how to read GRPC's saved data
+    if (inputImg is None) or (input_type != "Stream"):
+        return
+
+    sub_file = Path(_SUBMIT_PATH)
+    while sub_file.is_file():
+            time.sleep(0.01)
+
+    #Save file in memory so GRPC can access it
+    data_dict = {'im': inputImg,'frame': frame}
+    savemat(_SUBMIT_PATH, data_dict)
+
+    return frame +1
+
+def ResetStreamFrameCount():
+    return 0
+
+#-----Video---------------------------------
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Vidsubmit(inputVid,input_type):  
@@ -76,7 +113,7 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type):
 
         yield
 
-
+#-----Display---------------------------------
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_display():
@@ -85,8 +122,7 @@ def gradio_GRPC_display():
         while not FileIsReady(_DISPLAYIMG_PATH):
             time.sleep(0.01)
 
-        yield _DISPLAYIMG_PATH
+        yield _DISPLAYIMG_PATH,_DISPLAYDATA_PATH
         
         #Make sure the Display directory is cleared
         cleanup("DispImg",0)
-        cleanup("DispMat",0)

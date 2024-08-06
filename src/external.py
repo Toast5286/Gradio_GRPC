@@ -6,11 +6,12 @@ import time
 import os
 from pathlib import Path
 import io
+import numpy as np
 
 #TODO: Can change the Directories to save the data
 _SUBMIT_PATH = '/dev/shm/submit.mat'
 _DISPLAYIMG_PATH = '/dev/shm/display.png'
-_DISPLAYDATA_PATH = '/dev/shm/display.mat'
+_DISPLAYDATA_PATH = '/tmp/display.mat'
 
 
 def submit():
@@ -25,15 +26,28 @@ def submit():
     return generic_box_pb2.Data(file=image_bytes)
 
 
-def display(imgfile):
+def display(imgfile,matfile):
     #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
     dados = loadmat(io.BytesIO(imgfile)) 
-
     img = dados['im0']
 
-    disp_file = Path(_DISPLAYIMG_PATH)
-    while disp_file.is_file():
+    mat_path = Path(_DISPLAYDATA_PATH)
+    print(io.BytesIO(matfile))
+    MatDict = loadmat(io.BytesIO(matfile))
+
+    img_path = Path(_DISPLAYIMG_PATH)
+    while img_path.is_file():
         time.sleep(0.01)
+
+    if ('frame_0' in MatDict) or (not mat_path.is_file()):
+        savemat(_DISPLAYDATA_PATH, MatDict)
+    else:
+        while not FileIsReady(_DISPLAYDATA_PATH):
+            time.sleep(0.01)
+
+        oldMatDict = loadmat(_DISPLAYDATA_PATH)
+        MatAppend(oldMatDict,MatDict,_DISPLAYDATA_PATH)
+
     cv2.imwrite(_DISPLAYIMG_PATH, img) 
 
     return
@@ -56,9 +70,8 @@ def cleanup(DispOrSub,wait):
     # Delay the cleanup to ensure the files have been sent
     time.sleep(wait)
 
-    if os.path.isfile(dir):
-        # Delete the temporary directory
-        os.remove(dir)
+    # Delete the temporary directory
+    os.remove(dir)
 
 
 '''Helper function to make sure a file is ready to read
@@ -83,3 +96,24 @@ def FileIsReady(path):
         return True
     
     return False
+
+
+def MatAppend(existing_data, new_data, output_path):
+
+    existing_data.pop('__header__', None)
+    existing_data.pop('__version__', None)
+    existing_data.pop('__globals__', None)
+    new_data.pop('__header__', None)
+    new_data.pop('__version__', None)
+    new_data.pop('__globals__', None)
+    
+    # Merge the data (you may need to adjust this based on your data structure)
+    for key, value in new_data.items():
+        if key in existing_data:
+            # Assuming the data can be concatenated along the first dimension
+            existing_data[key] = np.concatenate((existing_data[key], value), axis=0)
+        else:
+            existing_data[key] = value
+    
+    # Save the merged data into a new .mat file
+    savemat(output_path, existing_data)

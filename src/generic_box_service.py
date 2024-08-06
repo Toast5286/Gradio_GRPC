@@ -30,7 +30,7 @@ class ServiceImpl(generic_box_pb2_grpc.GenericBoxServiceServicer):
         self.__submit_fn = submit_function
         self.__cleanup_fn = cleanup_function
 
-    def display(self, request: generic_box_pb2.Data, context):
+    def display(self, request: generic_box_pb2.PlotInfo, context):
         """Processes a given ImageWithPoses request
 
         It expects that a process function was already registered
@@ -48,11 +48,12 @@ class ServiceImpl(generic_box_pb2_grpc.GenericBoxServiceServicer):
             The Image with the applied function
 
         """
-        image = request.file
-        self.__display_fn(image)
+        image = request.img.file
+        matFile = request.file.file
+        self.__display_fn(image,matFile)
         return generic_box_pb2.Empty()
     
-    def submit(self, request: generic_box_pb2.Data, context):
+    def submit(self, request: generic_box_pb2.Empty, context):
         """Processes a given ImageWithPoses request
 
         It expects that a process function was already registered
@@ -84,7 +85,7 @@ def grpc_server():
     display_function = utils.get_calling_function('display')
     submit_function = utils.get_calling_function('submit')
     cleanup_function = utils.get_calling_function('cleanup')
-    if not display_function or not submit_function:
+    if not display_function or not submit_function or not cleanup_function:
         exit(1)
 
     server = grpc.server(futures.ThreadPoolExecutor())
