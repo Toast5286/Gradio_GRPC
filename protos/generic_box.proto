@@ -6,7 +6,7 @@ syntax = "proto3";
  * :returns: The transformed data
  */
 service GenericBoxService {
-    rpc display(Data) returns (Empty);
+    rpc display(PlotInfo) returns (Empty);
     rpc submit(Empty) returns (Data);
 }
 
@@ -17,6 +17,11 @@ service GenericBoxService {
  */
 message Data {
     bytes file = 1;
+}
+
+message PlotInfo {
+    Data img = 1;
+    Data file = 2;
 }
 
 message Empty {
