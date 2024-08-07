@@ -29,7 +29,7 @@ def submit():
 def display(imgfile,matfile):
     #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
     dados = loadmat(io.BytesIO(imgfile)) 
-    img = dados['im0']
+    img = dados['im']
 
     mat_path = Path(_DISPLAYDATA_PATH)
     print(io.BytesIO(matfile))
