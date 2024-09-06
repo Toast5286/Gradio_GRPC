@@ -9,18 +9,23 @@ import io
 import numpy as np
 
 #TODO: Can change the Directories to save the data
-_SUBMIT_PATH = '/dev/shm/submit.mat'
-_DISPLAYIMG_PATH = '/dev/shm/display.png'
-_DISPLAYDATA_PATH = '/tmp/display.mat'
+_SUBMIT_PATH = '/dev/shm/submit/'       #.mat
+_DISPLAYIMG_PATH = '/dev/shm/display/'  #.png
+_DISPLAYDATA_PATH = '/tmp/display/'     #.mat
 
 
 def submit():
-    #TODO:Here is where you can add your code to combine Gradio's inputs to send the GRPC message
+    #check if there's any files in the submit directory
+    while not os.listdir(_SUBMIT_PATH):
+        time.sleep(0.01)
+    fileList = os.listdir(_SUBMIT_PATH)
+    fileToSubmit = _SUBMIT_PATH + fileList[0]
+
     #Wait untill the _SUBMIT_PATH has a file to load
-    while not FileIsReady(_SUBMIT_PATH):
+    while not FileIsReady(fileToSubmit):
         time.sleep(0.01)
 
-    with open(_SUBMIT_PATH, 'rb') as fp:
+    with open(fileToSubmit, 'rb') as fp:
         image_bytes = fp.read()
 
     return generic_box_pb2.Data(file=image_bytes)
@@ -30,25 +35,28 @@ def display(imgfile,matfile):
     #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
     dados = loadmat(io.BytesIO(imgfile)) 
     img = dados['im']
+    session_hash = dados['session_hash']
+    UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + '.png'
+    UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + '.png'
 
-    mat_path = Path(_DISPLAYDATA_PATH)
+    mat_path = Path(UserDisplayDataPath)
     print(io.BytesIO(matfile))
     MatDict = loadmat(io.BytesIO(matfile))
 
-    img_path = Path(_DISPLAYIMG_PATH)
+    img_path = Path(UserDisplayImgPath)
     while img_path.is_file():
         time.sleep(0.01)
 
     if ('frame_0' in MatDict) or (not mat_path.is_file()):
-        savemat(_DISPLAYDATA_PATH, MatDict)
+        savemat(UserDisplayDataPath, MatDict)
     else:
-        while not FileIsReady(_DISPLAYDATA_PATH):
+        while not FileIsReady(UserDisplayDataPath):
             time.sleep(0.01)
 
-        oldMatDict = loadmat(_DISPLAYDATA_PATH)
-        MatAppend(oldMatDict,MatDict,_DISPLAYDATA_PATH)
+        oldMatDict = loadmat(UserDisplayDataPath)
+        MatAppend(oldMatDict,MatDict,UserDisplayDataPath)
 
-    cv2.imwrite(_DISPLAYIMG_PATH, img) 
+    cv2.imwrite(UserDisplayImgPath, img) 
 
     return
 
