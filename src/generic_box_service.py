@@ -5,6 +5,7 @@ import logging
 import generic_box_pb2
 import generic_box_pb2_grpc
 import utils
+import os
 
 import threading
 import asyncio
@@ -71,9 +72,9 @@ class ServiceImpl(generic_box_pb2_grpc.GenericBoxServiceServicer):
             The Image with the applied function
 
         """
-        result = self.__submit_fn()
+        result,submitFile = self.__submit_fn()
         #Clear submit direcory
-        self.__cleanup_fn("Sub",0)
+        self.__cleanup_fn(submitFile,0)
         return result
 
 def grpc_server():
@@ -112,4 +113,11 @@ async def main():
         
 
 if __name__ == '__main__':
+    if not os.path.exists('/dev/shm/submit/'):
+        os.makedirs('/dev/shm/submit/')
+    if not os.path.exists('/dev/shm/display/'):
+        os.makedirs('/dev/shm/display/')
+    if not os.path.exists('/tmp/display/'):
+        os.makedirs('/tmp/display/')
+
     asyncio.run(main())

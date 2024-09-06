@@ -5,42 +5,45 @@ import generic_box_pb2
 import time
 import os
 from pathlib import Path
-import io
 import numpy as np
+import random
+
 
 #TODO: Can change the Directories to save the data
-_SUBMIT_PATH = '/dev/shm/submit/'       #.mat
-_DISPLAYIMG_PATH = '/dev/shm/display/'  #.png
-_DISPLAYDATA_PATH = '/tmp/display/'     #.mat
+_SUBMIT_PATH = '/dev/shm/submit/'        #.mat
+_DISPLAYIMG_PATH = '/dev/shm/display/'   #.png
+_DISPLAYDATA_PATH = '/tmp/display/'      #.mat
 
 
 def submit():
-    #check if there's any files in the submit directory
+    
     while not os.listdir(_SUBMIT_PATH):
         time.sleep(0.01)
-    fileList = os.listdir(_SUBMIT_PATH)
-    fileToSubmit = _SUBMIT_PATH + fileList[0]
 
+    FileList = os.listdir(_SUBMIT_PATH)
+    print(FileList)
+
+    submitFile = _SUBMIT_PATH + random.choice(FileList)
     #Wait untill the _SUBMIT_PATH has a file to load
-    while not FileIsReady(fileToSubmit):
+    while not FileIsReady(submitFile):
         time.sleep(0.01)
 
-    with open(fileToSubmit, 'rb') as fp:
+    with open(submitFile, 'rb') as fp:
         image_bytes = fp.read()
 
-    return generic_box_pb2.Data(file=image_bytes)
+    return generic_box_pb2.Data(file=image_bytes),submitFile
 
 
 def display(imgfile,matfile):
     #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
     dados = loadmat(io.BytesIO(imgfile)) 
     img = dados['im']
-    session_hash = dados['session_hash']
-    UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + '.png'
-    UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + '.png'
+    session_hash = dados['session_hash'][0]
+
+    UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + ".png"
+    UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + ".mat"
 
     mat_path = Path(UserDisplayDataPath)
-    print(io.BytesIO(matfile))
     MatDict = loadmat(io.BytesIO(matfile))
 
     img_path = Path(UserDisplayImgPath)
@@ -64,22 +67,16 @@ def display(imgfile,matfile):
 '''------------------------------------------Auxiliary Functions--------------------------------------------------------'''
 
 #Function to Clean up files
-def cleanup(DispOrSub,wait):
-    #Check if cleanup if for the display directory or the submit directory
-    if DispOrSub == 'DispImg':
-        dir = _DISPLAYIMG_PATH
-    elif DispOrSub == 'Sub':
-        dir = _SUBMIT_PATH
-    elif DispOrSub == 'DispMat':
-        dir = _DISPLAYDATA_PATH
-    else:
-        return
+def cleanup(dir,wait):
     
     # Delay the cleanup to ensure the files have been sent
     time.sleep(wait)
 
-    # Delete the temporary directory
-    os.remove(dir)
+    my_file = Path(dir)
+    #Make sure the file is in directory
+    if my_file.is_file():
+        # Delete the temporary directory
+        os.remove(dir)
 
 
 '''Helper function to make sure a file is ready to read
