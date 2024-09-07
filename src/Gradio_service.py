@@ -55,7 +55,7 @@ def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
 
     #Make sure the Display directory is cleared
     cleanup(UserDisplayImgPath,0)
-    cleanup(UserDisplayDataPath,0)
+    
 
     if input_type == "Image" and not (inputImg is None):
 
@@ -79,8 +79,7 @@ def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
 
     #Make sure the Display directory is cleared
     cleanup(UserDisplayImgPath,0)
-    cleanup(UserDisplayDataPath,0)
-
+    
     if input_type == "Stream" and not (inputImg is None):
         sub_file = Path(UserSubPath)
         while sub_file.is_file():
@@ -116,7 +115,7 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):
 
         #Make sure the Display directory is cleared
         cleanup(UserDisplayImgPath,0)
-        cleanup(UserDisplayDataPath,0)
+    
 
         #Make sure last frame has been sent to yolo
         while sub_file.is_file():
