@@ -38,6 +38,7 @@ def gradio_function():
         vid.change(gradio_GRPC_Vidsubmit,inputs=[vid,input_type],outputs=[display,fileOutput])
 
         resetFrameCount.click(ResetStreamFrameCount,inputs=[],outputs=[streamFrame])
+        demo.unload(delete_directory)
         
     demo.launch()
 
@@ -49,65 +50,59 @@ def update_visibility(input_type):
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
-    UserSubPath = _SUBMIT_PATH + req.session_hash + ".mat"
-    UserDisplayImgPath = _DISPLAYIMG_PATH + req.session_hash + ".png"
-    UserDisplayDataPath = _DISPLAYDATA_PATH + req.session_hash + ".mat"
-
-    #Make sure the Display directory is cleared
-    cleanup(UserDisplayImgPath,0)
+    #Make sure it's the right input
+    if (input_type != "Image") or (inputImg is None):
+        return
     
+    #Get necessary paths
+    UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
 
-    if input_type == "Image" and not (inputImg is None):
+    #Make sure the Display directory is cleared before sending the next image
+    cleanup(UserDisplayImgPath,0)
 
-        sub_file = Path(UserSubPath)
-        while sub_file.is_file():
-                time.sleep(0.01)
+    #Save the images for grpc's submit function
+    Wait_And_Save(UserSubPath,inputImg,0,req.session_hash)
 
-        #Save file in memory so GRPC can access it
-        data_dict = {'im': inputImg,'frame': 0,'session_hash':req.session_hash}
-        savemat(UserSubPath, data_dict)
-
-    return gradio_GRPC_display(UserDisplayImgPath,UserDisplayDataPath)
+    #Wait to get the images and .mat file to display
+    return Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
 
 #-----Stream---------------------------------
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
-    UserSubPath = _SUBMIT_PATH + req.session_hash + ".mat"
-    UserDisplayImgPath = _DISPLAYIMG_PATH + req.session_hash + ".png"
-    UserDisplayDataPath = _DISPLAYDATA_PATH + req.session_hash + ".mat"
-
-    #Make sure the Display directory is cleared
-    cleanup(UserDisplayImgPath,0)
+    #Make sure it's the right input
+    if (input_type != "Stream") or (inputImg is None):
+        return
     
-    if input_type == "Stream" and not (inputImg is None):
-        sub_file = Path(UserSubPath)
-        while sub_file.is_file():
-                time.sleep(0.01)
+    #Get necessary paths
+    UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
 
-        #Save file in memory so GRPC can access it
-        data_dict = {'im': inputImg,'frame': frame,'session_hash':req.session_hash}
-        savemat(UserSubPath, data_dict)
+    #Make sure the Display directory is cleared before sending the next image
+    cleanup(UserDisplayImgPath,0)
 
-        imagePath,filePath = gradio_GRPC_display(UserDisplayImgPath,UserDisplayDataPath)
+    #Save the images for grpc's submit function
+    Wait_And_Save(UserSubPath,inputImg,frame,req.session_hash)
+
+    #Wait to get the images and .mat file to display
+    imagePath,filePath = Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
         
-        return frame + 1,imagePath,filePath
+    return frame + 1,imagePath,filePath
 
-def ResetStreamFrameCount():
+def ResetStreamFrameCount(req:gr.Request):
+    delete_directory(req)
     return 0
 
 #-----Video---------------------------------
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):  
-    if (inputVid is None) or (input_type != "Video"):
+    if (input_type != "Video") or (inputVid is None):
         return
     
-    UserSubPath = _SUBMIT_PATH + req.session_hash + ".mat"
-    UserDisplayImgPath = _DISPLAYIMG_PATH + req.session_hash + ".png"
-    UserDisplayDataPath = _DISPLAYDATA_PATH + req.session_hash + ".mat"
+    #Get necessary paths
+    UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
     
-    sub_file = Path(UserSubPath)
+    #Get vid object and respective frame count
     cap = cv2.VideoCapture(inputVid)
     amount_of_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -115,35 +110,52 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):
 
         #Make sure the Display directory is cleared
         cleanup(UserDisplayImgPath,0)
-    
 
-        #Make sure last frame has been sent to yolo
-        while sub_file.is_file():
-            time.sleep(0.01)
-        
         #read frame
         _, frame = cap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        #Save file in memory so GRPC can access it
-        data_dict = {'im': frame,'frame': i,'session_hash':req.session_hash}
-        savemat(UserSubPath, data_dict)
+        #Save the images for grpc's submit function
+        Wait_And_Save(UserSubPath,frame,i,req.session_hash)
 
-        yield gradio_GRPC_display(UserDisplayImgPath,UserDisplayDataPath)
+        yield Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
 
-#-----Display---------------------------------
+#-----delete_directory-------------------------------
+
+def delete_directory(req:gr.Request):
+     #Get necessary paths
+    _,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
+    cleanup(UserDisplayImgPath,0)
+    cleanup(UserDisplayDataPath,0)
+
+'''------------------------------------------Auxiliary Functions--------------------------------------------------------'''
+        
+def get_Paths(session_hash):
+    UserSubPath = _SUBMIT_PATH + session_hash + ".mat"
+    UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + ".png"
+    UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + ".mat"
+
+    return UserSubPath,UserDisplayImgPath,UserDisplayDataPath
+        
+def Wait_And_Save(SavePath,image,frame,session_hash):
+    sub_file = Path(SavePath)
+    while sub_file.is_file():
+            time.sleep(0.01)
+
+    #Save file in memory so GRPC can access it
+    data_dict = {'im': image,'frame': frame,'session_hash':session_hash}
+    savemat(SavePath, data_dict)
 
 
 #Function used to process the users data and outputs the desired data for the user
-def gradio_GRPC_display(UserDisplayImgPath,UserDisplayDataPath):
+def Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,timeOutLimit):
 
     timeOut = 0
     #Wait untill the display images is saved
     while not FileIsReady(UserDisplayImgPath):
         time.sleep(0.01)
         timeOut = timeOut+1
-        if  timeOut == 100:
+        if  timeOut >= timeOutLimit:
             return None, None
 
     return UserDisplayImgPath, UserDisplayDataPath
-

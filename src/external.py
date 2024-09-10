@@ -112,11 +112,14 @@ def MatAppend(existing_data, new_data, output_path):
     new_data.pop('__version__', None)
     new_data.pop('__globals__', None)
     
-    # Merge the data (you may need to adjust this based on your data structure)
+    # Merge the data
     for key, value in new_data.items():
         if key in existing_data:
             # Assuming the data can be concatenated along the first dimension
-            existing_data[key] = np.concatenate((existing_data[key], value), axis=0)
+            if type(existing_data[key]) == type(value):
+                existing_data[key] = np.concatenate((existing_data[key], value), axis=0)
+            else:
+                existing_data[key] = np.concatenate((existing_data[key], -1), axis=0)
         else:
             existing_data[key] = value
     
