@@ -50,7 +50,7 @@ def display(imgfile,matfile):
     while img_path.is_file():
         time.sleep(0.01)
 
-    if ('frame_0' in MatDict) or (not mat_path.is_file()):
+    if ('frame_00000' in MatDict) or (not mat_path.is_file()):
         savemat(UserDisplayDataPath, MatDict)
     else:
         while not FileIsReady(UserDisplayDataPath):
@@ -114,14 +114,7 @@ def MatAppend(existing_data, new_data, output_path):
     
     # Merge the data
     for key, value in new_data.items():
-        if key in existing_data:
-            # Assuming the data can be concatenated along the first dimension
-            if type(existing_data[key]) == type(value):
-                existing_data[key] = np.concatenate((existing_data[key], value), axis=0)
-            else:
-                existing_data[key] = np.concatenate((existing_data[key], -1), axis=0)
-        else:
-            existing_data[key] = value
+        existing_data[key] = value
     
     # Save the merged data into a new .mat file
     savemat(output_path, existing_data)

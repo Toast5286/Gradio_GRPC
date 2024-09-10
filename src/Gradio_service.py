@@ -52,7 +52,7 @@ def update_visibility(input_type):
 def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
     #Make sure it's the right input
     if (input_type != "Image") or (inputImg is None):
-        return
+        return None, None
     
     #Get necessary paths
     UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
@@ -64,7 +64,7 @@ def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
     Wait_And_Save(UserSubPath,inputImg,0,req.session_hash)
 
     #Wait to get the images and .mat file to display
-    return Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
+    return Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,3000)
 
 #-----Stream---------------------------------
 
@@ -72,7 +72,7 @@ def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
 def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
     #Make sure it's the right input
     if (input_type != "Stream") or (inputImg is None):
-        return
+        return frame,None, None
     
     #Get necessary paths
     UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
@@ -84,7 +84,7 @@ def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
     Wait_And_Save(UserSubPath,inputImg,frame,req.session_hash)
 
     #Wait to get the images and .mat file to display
-    imagePath,filePath = Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
+    imagePath,filePath = Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,3000)
         
     return frame + 1,imagePath,filePath
 
@@ -97,7 +97,7 @@ def ResetStreamFrameCount(req:gr.Request):
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):  
     if (input_type != "Video") or (inputVid is None):
-        return
+        return None, None
     
     #Get necessary paths
     UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
@@ -118,7 +118,7 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):
         #Save the images for grpc's submit function
         Wait_And_Save(UserSubPath,frame,i,req.session_hash)
 
-        yield Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,1000)
+        yield Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,3000)
 
 #-----delete_directory-------------------------------
 
