@@ -51,7 +51,11 @@ class ServiceImpl(generic_box_pb2_grpc.GenericBoxServiceServicer):
         """
         image = request.img.file
         matFile = request.file.file
-        self.__display_fn(image,matFile)
+        try:
+            self.__display_fn(image,matFile)
+        except:
+            logging.exception(f'''[ERRO NO DISPLAY]''')
+
         return generic_box_pb2.Empty()
     
     def submit(self, request: generic_box_pb2.Empty, context):
