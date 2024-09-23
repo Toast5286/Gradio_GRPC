@@ -8,6 +8,14 @@ from external import cleanup,FileIsReady,_DISPLAYIMG_PATH,_DISPLAYDATA_PATH,_SUB
 
 #Define the Gradio Interface
 def gradio_function():
+    '''
+    * Function:     gradio_function
+    * Arguments:    
+    *
+    * Returns:
+    *
+    * Description:  Function to run the gradio user interface
+    '''
 
     #TODO: Here is where you can add your code to change the Gradio Interface
     with gr.Blocks() as demo:
@@ -50,6 +58,17 @@ def update_visibility(input_type):
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
+    '''
+    * Function:     gradio_GRPC_submit
+    * Arguments:    inputImg (Gradio Image)                 -The input image that the user submited
+    *               input_type (Gradio Dropdown)            -The input type (image, Stream or Video) that the user selected
+    *               req (Gradio Request)                    -The Users information (like the session hash)
+    *               
+    * Returns:       UserDisplayImgPath                     -The Path to the Ploted image
+    *                UserDisplayDataPath                    -The Path to the file to display
+    *
+    * Description:  Funtion that is called when a user submits a image to be processed. It saves the image in to a .mat file and saves it to the submit file. Afterwards, it waits untill the pipeline returns a new .mat file in the display directories and displays them.
+    '''
     #Make sure it's the right input
     if (input_type != "Image") or (inputImg is None):
         return None, None
@@ -70,6 +89,19 @@ def gradio_GRPC_submit(inputImg,input_type,req:gr.Request):
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
+    '''
+    * Function:     gradio_GRPC_Streamsubmit
+    * Arguments:    inputImg (Gradio Image with source as webcam)   -The input image that the user submited
+    *               input_type (Gradio Dropdown)                    -The input type (image, Stream or Video) that the user selected
+    *               frame (Gradio Number)                           -The number of frames already streamed
+    *               req (Gradio Request)                            -The Users information (like the session hash)
+    *               
+    * Returns:       frame+1                                        -The new number of frames
+    *                imagePath                                      -The Path to the Ploted image
+    *                filePath                                       -The Path to the file to display
+    *
+    * Description:  Funtion that is called when a user submits the webcam image to be processed. It saves the image in to a .mat file and saves it to the submit file. Afterwards, it waits untill the pipeline returns a new .mat file in the display directories and displays them.
+    '''
     #Make sure it's the right input
     if (input_type != "Stream") or (inputImg is None):
         return frame,None, None
@@ -89,6 +121,14 @@ def gradio_GRPC_Streamsubmit(inputImg,input_type,frame,req:gr.Request):
     return frame + 1,imagePath,filePath
 
 def ResetStreamFrameCount(req:gr.Request):
+    '''
+    * Function:     ResetStreamFrameCount
+    * Arguments:    req (Gradio Request)                            -The Users information (like the session hash)
+    *               
+    * Returns:       0                                              -The new frame count. It was reset, therefore it is now 0
+    *
+    * Description:  Clears the frame count and, therefore also deletes all the .mat files related to this user.
+    '''
     delete_directory(req)
     return 0
 
@@ -96,6 +136,18 @@ def ResetStreamFrameCount(req:gr.Request):
 
 #Function used to process the users data and outputs the desired data for the user
 def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):  
+    '''
+    * Function:     gradio_GRPC_Vidsubmit
+    * Arguments:    inputVid (Gradio Video)                         -The input video that the user submited
+    *               input_type (Gradio Dropdown)                    -The input type (image, Stream or Video) that the user selected
+    *               req (Gradio Request)                            -The Users information (like the session hash)
+    *               
+    * Returns:       imagePath                                      -The Path to the Ploted image
+    *                filePath                                       -The Path to the file to display
+    *
+    * Description:  Funtion that is called when a user submits a video to be processed. It saves each frame in to a .mat file and saves it to the submit file. Afterwards, it waits untill the pipeline returns a new .mat file in the display directories and displays them.
+    *               This process can "Freeze" the rest of the useres untill the video is completly prosessed.
+    '''
     if (input_type != "Video") or (inputVid is None):
         return None, None
     
@@ -123,6 +175,14 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):
 #-----delete_directory-------------------------------
 
 def delete_directory(req:gr.Request):
+    '''
+    * Function:     delete_directory
+    * Arguments:    req (Gradio Request)                            -The Users information (like the session hash)
+    *               
+    * Returns:
+    *
+    * Description:  Clears the user's directory.
+    '''
      #Get necessary paths
     _,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
     cleanup(UserDisplayImgPath,0)
@@ -131,6 +191,16 @@ def delete_directory(req:gr.Request):
 '''------------------------------------------Auxiliary Functions--------------------------------------------------------'''
         
 def get_Paths(session_hash):
+    '''
+    * Function:     get_Paths
+    * Arguments:    session_hash                            -The User's session hash
+    *               
+    * Returns:      UserSubPath                             -User's .mat file path to submit image
+    *               UserDisplayImgPath                      -User's .mat file path to receive and display ploted image
+    *               UserDisplayDataPath                     -User's .mat file path to receive and display data
+    *
+    * Description:  Gets the user's usefull paths
+    '''
     UserSubPath = _SUBMIT_PATH + session_hash + ".mat"
     UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + ".png"
     UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + ".mat"
@@ -138,6 +208,17 @@ def get_Paths(session_hash):
     return UserSubPath,UserDisplayImgPath,UserDisplayDataPath
         
 def Wait_And_Save(SavePath,image,frame,session_hash):
+    '''
+    * Function:     Wait_And_Save
+    * Arguments:    SavePath                                -The path to the .mat file to save the image and useful information
+    *               image                                   -The image to save in to the .mat file
+    *               frame                                   -The number of the frame that is going to be saved in to the .mat file
+    *               session_hash                            -The User's session hash
+    *               
+    * Returns:
+    *
+    * Description:  Waits for the SavePath to be clear (in case the grpc is delayed), creates a dictionary with the image, frame number and session hash and save it to the SavePath.
+    '''
     sub_file = Path(SavePath)
     while sub_file.is_file():
             time.sleep(0.01)
@@ -149,6 +230,17 @@ def Wait_And_Save(SavePath,image,frame,session_hash):
 
 #Function used to process the users data and outputs the desired data for the user
 def Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,timeOutLimit):
+    '''
+    * Function:     Wait_And_Display
+    * Arguments:    UserDisplayImgPath                      -The path where grpc saved the .mat file that has the ploted image to display
+    *               UserDisplayDataPath                     -The path where grpc saved the .mat file that has the data to display
+    *               timeOutLimit                            -number of attempts that the function can try before getting a time out (to avoid infinite loops)
+    *               
+    * Returns:      UserDisplayImgPath                      -The path where grpc saved the .mat file that has the ploted image to display
+    *               UserDisplayDataPath                     -The path where grpc saved the .mat file that has the data to display
+    *
+    * Description: Waits untill there's a file written in UserDisplayImgPath. Afterwards it returns them as they are ready to be displayed
+    '''
 
     timeOut = 0
     #Wait untill the display images is saved

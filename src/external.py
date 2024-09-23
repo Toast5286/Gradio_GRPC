@@ -16,7 +16,15 @@ _DISPLAYDATA_PATH = '/tmp/display/'      #.mat
 
 
 def submit():
-    
+    '''
+    * Function:     submit
+    * Arguments:
+    *               
+    * Returns:      generic_box_pb2.Data                    -GRPC message containing a binary .mat file randomly selected that was in the submit path
+    *               submitFile                              -Path of the .mat file slected that needs to be cleared after the message is sent
+    *
+    * Description: Waits untill there's a file written in the _SUBMIT_PATH directory. Afterwards it packs the selected .mat file in to a grpc message to be sent. 
+    '''
     while not os.listdir(_SUBMIT_PATH):
         time.sleep(0.01)
 
@@ -35,7 +43,15 @@ def submit():
 
 
 def display(imgfile,matfile):
-    #TODO:Here is where you can add your code to save the GRPC's message for Gradio to read
+    '''
+    * Function:     display
+    * Arguments:    imgfile (binary .mat file)              -Binary .mat file that contains the ploted image and the user's session hash to return it to
+    *               matfile (binary .mat file)              -Binary .mat file that contains the data requested by the user
+    *               
+    * Returns:
+    *
+    * Description: When it receives a grpc message to the display method,this function is executed. It checks if it needs to apend the data file (matfile) to older file if any is available. Saves the image and the data file to a path related with the session hash (from imgfile) for Gradio to read.
+    '''
     dados = loadmat(io.BytesIO(imgfile)) 
     img = dados['im']
     session_hash = dados['session_hash'][0]
@@ -68,6 +84,15 @@ def display(imgfile,matfile):
 
 #Function to Clean up files
 def cleanup(dir,wait):
+    '''
+    * Function:     cleanup
+    * Arguments:    dir (Path)              -Path to delete
+    *               wait (int)              -Wait time before deleting the file
+    *               
+    * Returns:
+    *
+    * Description: Waits wait time before delete the file requested in dir. 
+    '''
     
     # Delay the cleanup to ensure the files have been sent
     time.sleep(wait)
@@ -79,11 +104,16 @@ def cleanup(dir,wait):
         os.remove(dir)
 
 
-'''Helper function to make sure a file is ready to read
-        Due to the asyncronous behaviour between the gradio and GRPC servers,
-        It's useful to have a function that makes sure a file is fully written.
-'''
 def FileIsReady(path):
+    '''
+    * Function:     FileIsReady
+    * Arguments:    path (Path)             -Path to check
+    *               
+    * Returns:      True/False (boolean)    -Returns True if the file is fully saved and False otherwise
+    *
+    * Description: Checks if the file in path is being written or not and returns true if it's fully written. False otherwise.
+    *              Due to the asyncronous behaviour between the gradio and GRPC servers, it's useful to have a function that makes sure a file is fully written.
+    '''
     my_file = Path(path)
 
     #Make sure the file is in directory
@@ -104,6 +134,16 @@ def FileIsReady(path):
 
 
 def MatAppend(existing_data, new_data, output_path):
+    '''
+    * Function:     MatAppend
+    * Arguments:    existing_data (dictionary)      -Dictionary that comes from a .mat file where we want to append
+    *               new_data (dictionary)           -Dictionary that comes from a .mat file that we want to append
+    *               output_path (Path)              -Path to save the appended .mat file
+    *               
+    * Returns:
+    *
+    * Description: Appends both .mat files and saves them in to output_path.
+    '''
 
     existing_data.pop('__header__', None)
     existing_data.pop('__version__', None)
