@@ -66,7 +66,7 @@ def display(imgfile,matfile):
     while img_path.is_file():
         time.sleep(0.01)
 
-    if ('frame_00000' in MatDict) or (not mat_path.is_file()):
+    if ('data_00000' in MatDict) or (not mat_path.is_file()):
         savemat(UserDisplayDataPath, MatDict)
     else:
         while not FileIsReady(UserDisplayDataPath):
