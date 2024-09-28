@@ -14,7 +14,7 @@ Used to define the aesthetic of the interface and launch the Gradio server.
 Used to save Gradio's inputs (images/frames) in to a .mat file (for the GRPC's submit functions to read) and waits for the Display files (sent by the GRPC's display function) to show to the user.
 The .mat file submitted has the following structure:
 
-```bash
+```
 [session_hash].mat (dictionary)
   ├── ”im” - numpy array containing the saved image/frame;
   ├── ”frame” – number of the frame of uploaded image image (0 in case of a single image). This information is used for appending the the receiving .mat files in GRPC display;
@@ -25,12 +25,12 @@ The .mat file submitted has the following structure:
 There 2 received .mat files. The image.mat file (used to send the plotted image to display) and the data.mat file (used to share a .mat file with the user).
 The .mat files received has the following structure:
 
-```bash
+```
 image.mat (dictionary)
    ├── ”im” - numpy array containing the image to be shown to the user;
    └── ”session_hash” – the user’s unique identifier that indicates to whom should the image be displayed to.
 ```
-```bash
+```
 data.mat (dictionary)
    ├── ”data_00000” – Dictionary containing the information for frame 0; (This is optional, but must exist if appending is needed for future files);
    └── …
@@ -46,7 +46,7 @@ All GRPC functions are stored in the "external.py" file. It contains 5 difrente 
 **submit**:
 Used to create a GRPC message (of type Data) with the inputs from Gradio's interface. The .mat file that is sent in Data message is the same as saved in the submit directory. If using one of the gradio_GRPC_submit functions, then it’ll have the same structure as [session_hash].mat :
 
-```bash
+```
 [session_hash].mat (dictionary)
   ├── ”im” - numpy array containing the saved image/frame;
   ├── ”frame” – number of the frame of uploaded image image (0 in case of a single image). This information is used for appending the the receiving .mat files in GRPC display;
@@ -58,12 +58,12 @@ Used to create a GRPC message (of type Data) with the inputs from Gradio's inter
 **display**:
 Used to save the data from a GRPC's message to a file for Gradio to display on its output. The files must follow the structure of the 2 received .mat files defined in the gradio_GRPC_submit functions:
 
-```bash
+```
 image.mat (dictionary)
    ├── ”im” - numpy array containing the image to be shown to the user;
    └── ”session_hash” – the user’s unique identifier that indicates to whom should the image be displayed to.
 ```
-```bash
+```
 data.mat (dictionary)
    ├── ”data_00000” – Dictionary containing the information for frame 0; (This is optional, but must exist if appending is needed for future files);
    └── …
