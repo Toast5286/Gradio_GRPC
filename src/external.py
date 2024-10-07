@@ -59,21 +59,21 @@ def display(imgfile,matfile):
     UserDisplayImgPath = _DISPLAYIMG_PATH + session_hash + ".png"
     UserDisplayDataPath = _DISPLAYDATA_PATH + session_hash + ".mat"
 
-    mat_path = Path(UserDisplayDataPath)
-    MatDict = loadmat(io.BytesIO(matfile))
-
     img_path = Path(UserDisplayImgPath)
     while img_path.is_file():
         time.sleep(0.01)
+    
+    if matfile:
+        mat_path = Path(UserDisplayDataPath)
+        MatDict = loadmat(io.BytesIO(matfile))
+        if (('data_00000' in MatDict) or (not mat_path.is_file())):
+            savemat(UserDisplayDataPath, MatDict)
+        else:
+            while not FileIsReady(UserDisplayDataPath):
+                time.sleep(0.01)
 
-    if ('data_00000' in MatDict) or (not mat_path.is_file()):
-        savemat(UserDisplayDataPath, MatDict)
-    else:
-        while not FileIsReady(UserDisplayDataPath):
-            time.sleep(0.01)
-
-        oldMatDict = loadmat(UserDisplayDataPath)
-        MatAppend(oldMatDict,MatDict,UserDisplayDataPath)
+            oldMatDict = loadmat(UserDisplayDataPath)
+            MatAppend(oldMatDict,MatDict,UserDisplayDataPath)
 
     cv2.imwrite(UserDisplayImgPath, img) 
 

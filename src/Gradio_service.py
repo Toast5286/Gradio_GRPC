@@ -1,7 +1,10 @@
 import gradio as gr
+from PIL import Image
 from scipy.io import savemat,loadmat
 import time
 import cv2
+import numpy as np
+import io
 from pathlib import Path
 
 from external import cleanup,FileIsReady,_DISPLAYIMG_PATH,_DISPLAYDATA_PATH,_SUBMIT_PATH
@@ -224,7 +227,8 @@ def Wait_And_Save(SavePath,image,frame,session_hash):
             time.sleep(0.01)
 
     #Save file in memory so GRPC can access it
-    data_dict = {'im': image,'frame': frame,'session_hash':session_hash}
+    JPEGImage =  SaveJPEGImage(image)
+    data_dict = {'im': JPEGImage,'frame': frame,'session_hash':session_hash}
     savemat(SavePath, data_dict)
 
 
@@ -249,5 +253,32 @@ def Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,timeOutLimit):
         timeOut = timeOut+1
         if  timeOut >= timeOutLimit:
             return None, None
+        
+    mat_file = Path(UserDisplayDataPath)
+    if mat_file.is_file():
+        return UserDisplayImgPath, UserDisplayDataPath
+    else:
+        return UserDisplayImgPath, None
 
-    return UserDisplayImgPath, UserDisplayDataPath
+def SaveJPEGImage(input_image):
+    '''
+    * Function:     SaveJPEGImage
+    * Arguments:    input_image                             -The image to save in JPEG format
+
+    *               
+    * Returns:      jpeg_image_array                        -The image in JPEG format
+    *
+    * Description: Saves numpy array in to a JPEG format
+    '''
+    #Save image in JPEG format in memory buffer
+    jpeg_image_io = io.BytesIO()  # In-memory buffer
+    image = Image.fromarray(input_image)
+    image.save(jpeg_image_io, format='JPEG')
+    
+    #Get the JPEG encoded bytes
+    jpeg_image_bytes = jpeg_image_io.getvalue()
+
+    #Convert the bytes to a numpy array for saving into .mat
+    jpeg_image_array = np.frombuffer(jpeg_image_bytes, dtype=np.uint8)
+
+    return jpeg_image_array
