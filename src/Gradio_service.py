@@ -27,7 +27,7 @@ def gradio_function():
 
         with gr.Row():
             with gr.Column():
-                input_type = gr.Dropdown(choices=["Image", "Stream", "Video"], label="Select Input Type")
+                input_type = gr.Dropdown(choices=["Image", "Stream", "Video","IPCam"], label="Select Input Type")
 
                 with gr.Column(visible=False) as Image_input:
                     img = gr.Image(sources="upload")
@@ -36,17 +36,22 @@ def gradio_function():
                     resetFrameCount = gr.Button(value='Reset frame Count')
                 with gr.Column(visible=False) as Video_input:
                     vid = gr.Video()
+                with gr.Column(visible=False) as IPCam_input:
+                    IP = gr.Textbox()
+                    CamFrames = gr.Number(value=0)
+                    IPCamStart = gr.Button(value='Start IP Cam')
 
             
             with gr.Column():
                 display = gr.Image(label="YoloV8n Output")
                 fileOutput = gr.File(label='Output .mat file')
 
-        input_type.change(update_visibility,inputs=input_type,outputs=[Image_input,Stream_input,Video_input])
+        input_type.change(update_visibility,inputs=input_type,outputs=[Image_input,Stream_input,Video_input,IPCam_input])
         
         img.change(gradio_GRPC_submit,inputs=[img,input_type],outputs=[display,fileOutput])     
         stream.stream(gradio_GRPC_Streamsubmit,inputs=[stream,input_type,streamFrame],outputs=[streamFrame,display,fileOutput])
         vid.change(gradio_GRPC_Vidsubmit,inputs=[vid,input_type],outputs=[display,fileOutput])
+        IPCamStart.click(gradio_GRPC_IPCamsubmit,inputs=[CamFrames,IP,input_type],outputs=[display,fileOutput])
 
         resetFrameCount.click(ResetStreamFrameCount,inputs=[],outputs=[streamFrame])
         demo.unload(delete_directory)
@@ -55,7 +60,7 @@ def gradio_function():
 
 
 def update_visibility(input_type):
-    return gr.update(visible=input_type == "Image"), gr.update(visible=input_type == "Stream"), gr.update(visible=input_type == "Video")
+    return gr.update(visible=input_type == "Image"), gr.update(visible=input_type == "Stream"), gr.update(visible=input_type == "Video") ,gr.update(visible=input_type == "IPCam")
 
 #-----Image---------------------------------
 
@@ -163,6 +168,32 @@ def gradio_GRPC_Vidsubmit(inputVid,input_type,req:gr.Request):
 
     for i in range(amount_of_frames):
 
+        #Make sure the Display directory is cleared
+        cleanup(UserDisplayImgPath,0)
+
+        #read frame
+        _, frame = cap.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        #Save the images for grpc's submit function
+        Wait_And_Save(UserSubPath,frame,i,req.session_hash)
+
+        yield Wait_And_Display(UserDisplayImgPath,UserDisplayDataPath,3000)
+
+#-----IP_Cam---------------------------------
+
+#Function used to process the users data and outputs the desired data for the user
+def gradio_GRPC_IPCamsubmit(NFrames,IPCamLink,input_type,req:gr.Request):
+    #Make sure it's the right input
+    if (input_type != "IPCam") or (IPCamLink is None):
+        return None, None
+    
+    #Get necessary paths
+    UserSubPath,UserDisplayImgPath,UserDisplayDataPath = get_Paths(req.session_hash)
+
+    #Get vid object and respective frame count
+    for i in range(NFrames):
+        cap = cv2.VideoCapture(IPCamLink)
         #Make sure the Display directory is cleared
         cleanup(UserDisplayImgPath,0)
 
